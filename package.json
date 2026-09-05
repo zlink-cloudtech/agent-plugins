@@ -1,0 +1,17 @@
+{
+  "name": "@zlink-cloudtech/agent-plugins-source",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Source repository for the agent-plugins plugin (PRD workflow + system design skills) and its generated platform artifacts.",
+  "scripts": {
+    "build": "node scripts/build-artifacts.mjs",
+    "build:claude": "node scripts/build-artifacts.mjs --target claude",
+    "build:dsh": "node scripts/build-artifacts.mjs --target dsh",
+    "publish:marketplace:local": "node scripts/publish-marketplace-artifact.mjs",
+    "sync-version": "bash scripts/sync-version.sh"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
