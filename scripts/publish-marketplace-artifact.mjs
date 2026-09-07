@@ -14,7 +14,7 @@ const plugin = JSON.parse(await fs.readFile(pluginJsonPath, 'utf8'));
 const marketplaceRepo = process.env.MARKETPLACE_REPO
   ? path.resolve(process.env.MARKETPLACE_REPO)
   : path.resolve(repoRoot, '..', 'agent-plugin-marketplace');
-const targetDir = path.join(marketplaceRepo, 'artifacts', plugin.name);
+const targetDir = path.join(marketplaceRepo, 'plugins', plugin.name);
 
 await assertExists(sourceDir, 'Claude artifact is missing. Run npm run build:claude first.');
 await assertExists(path.join(sourceDir, 'build-meta.json'), 'Claude build metadata is missing. Run npm run build:claude first.');

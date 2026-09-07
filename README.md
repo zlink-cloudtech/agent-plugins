@@ -217,7 +217,7 @@ npm run publish:marketplace:local
 默认同步到相邻仓库：
 
 ```text
-../agent-plugin-marketplace/artifacts/agent-plugins
+../agent-plugin-marketplace/plugins/agent-plugins
 ```
 
 如需指定其他 marketplace 仓库路径：
