@@ -4,6 +4,7 @@ import { constants as fsConstants } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { execFileSync } from 'node:child_process';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '..');
@@ -31,12 +32,27 @@ await fs.writeFile(
     name: plugin.name,
     version: plugin.version,
     artifactType: 'claude-marketplace',
-    sourceRepo: 'agent-plugins',
+    sourceRepo: readSourceRepoUrl(plugin.name),
     buildMeta,
   }, null, 2)}\n`,
 );
 
 console.log(`Published ${plugin.name} v${plugin.version} artifact to ${path.relative(process.cwd(), targetDir)}`);
+
+function readSourceRepoUrl(fallback) {
+  try {
+    const url = execFileSync('git', ['remote', 'get-url', 'origin'], {
+      cwd: repoRoot,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim();
+    const github = url.match(/^(?:git@github\.com:|https:\/\/github\.com\/)(.+?)\.git$/);
+    if (github) return `https://github.com/${github[1]}`;
+    return url;
+  } catch {
+    return fallback;
+  }
+}
 
 async function assertExists(filePath, message) {
   try {
