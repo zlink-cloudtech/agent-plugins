@@ -3,7 +3,7 @@
   <p>PRD 工作流 + 系统设计技能包 — 从需求描述到可交付 PRD，再到面向多服务架构的技术规格</p>
 
   <div>
-    <span>📦 版本: v1.0.0</span> ·
+    <span>📦 版本: v2.0.0</span> ·
     <span>📄 协议: MIT</span> ·
     <span>🔧 平台: Claude Code 插件</span>
   </div>
@@ -27,6 +27,7 @@
 | **spec-checker** | 从结构、完整性、准确性三个维度对 PRD 严苛评分 | `/spec-checker <PRD路径>` |
 | **spec-analysis** | 对已澄清的 PRD 进行技术可行性分析，含合理性检查、依赖分析、架构影响评估、NFR 推导，分析完成后自动衔接技术预研 | `/spec-analysis <PRD路径>` |
 | **feasibility-report-checker** | 对可行性分析报告进行独立质量评审（覆盖完整性、行动可执行性、逻辑一致性） | `/feasibility-report-checker <报告路径>` 或 spec-analysis Phase 4 自动触发 |
+| **tech-research** | 对 PRD 中的技术不确定性进行预研验证，输出预研报告和 PRD 修改建议（支持标准模式与 action-researcher 委托的直接模式） | `/tech-research <PRD路径>` |
 
 ### 系统设计技能
 
@@ -60,8 +61,8 @@
 ## 典型工作流
 
 ```text
-product-knowledge-sync → spec-drafter → spec-clarifier → spec-checker → spec-analysis → action-researcher → system-design → architecture-evolution-check
-     (加载知识库)          (生成PRD)      (消除歧义)       (质量门禁)      (可行性分析)      (技术预研)        (技术规格)         (架构演进检测)
+product-knowledge-sync → spec-drafter → spec-clarifier → spec-checker → spec-analysis → tech-research → system-design → architecture-evolution-check
+     (加载知识库)          (生成PRD)      (消除歧义)       (质量门禁)      (可行性分析)     (技术预研)       (技术规格)         (架构演进检测)
 ```
 
 ### 阶段一：PRD 生成与澄清
@@ -116,17 +117,25 @@ product-knowledge-sync → spec-drafter → spec-clarifier → spec-checker → 
 - 可行性结论 + 推荐交付路径
 
 > [!TIP]
-> 报告中**不建议保留"下一步行动"表**。可行性分析的结论应直接通过 Phase 5 自动衔接技术预研（action-researcher），行动项由预研流程统一管理和追踪，避免报告中出现待处理僵尸条目。
+> 报告中**不建议保留"下一步行动"表**。可行性分析的结论应直接通过 Phase 5 自动衔接技术预研（tech-research / action-researcher），行动项由预研流程统一管理和追踪，避免报告中出现待处理僵尸条目。
 
 分析完成后自动衔接预研：提取"技术预研""风险缓解"类行动项 → 用户选择触发方式（全部触发 / 选择触发 / 稍后手动） → 委托 action-researcher 执行预研 → 输出预研报告 + PRD 修改建议。
 
-**6. action-researcher** — 预研衔接（由 spec-analysis Phase 5 自动触发或手动 `/action-researcher`）
+**6. tech-research** — 技术预研
 
-承接可行性分析的行动项，关联风险/假设上下文，并行分发研究子Agent，输出预研报告 + 状态更新清单 + PRD 修改建议。形成 可行性分析 → 预研 → 回填 → PRD 更新 的完整闭环。
+识别 PRD 中的技术不确定性，制定预研计划，并行分发研究 Agent，输出预研报告和 PRD 修改建议。既可由 spec-analysis 自动触发，也可从 PRD 直接手动触发：
+
+```bash
+/tech-research docs/specs/spec-model-routing.md
+```
+
+**7. action-researcher** — 预研衔接（由 spec-analysis Phase 5 自动触发或手动 `/action-researcher`）
+
+承接可行性分析的行动项，关联风险/假设上下文，以直接模式委托 tech-research 执行研究，输出预研报告 + 状态更新清单 + PRD 修改建议。形成 可行性分析 → 预研 → 回填 → PRD 更新 的完整闭环。
 
 ### 阶段三：系统设计（PRD → 技术规格）
 
-**7. system-design** — 技术规格生成
+**8. system-design** — 技术规格生成
 
 采用 **Controller 编排 + Agent 委派** 架构，将 PRD 转化为多服务技术规格：
 
@@ -142,7 +151,7 @@ Controller 加载上下文 → 复杂度预判
 
 输出路径：`docs/specs/techspec-<功能名>.md`
 
-**8. architecture-evolution-check** — 架构演进检测（可选）
+**9. architecture-evolution-check** — 架构演进检测（可选）
 
 检测业务需求与现有架构的冲突（突破服务边界、新增基础设施、与 constitution 冲突、需改造现有组件），生成架构演进需求文档。
 
@@ -225,6 +234,7 @@ MARKETPLACE_REPO=/path/to/agent-plugin-marketplace npm run publish:marketplace:l
 /spec-clarifier docs/specs/spec-model-routing.md
 /spec-checker docs/specs/spec-model-routing.md
 /spec-analysis docs/specs/spec-model-routing.md
+/tech-research docs/specs/spec-model-routing.md
 
 # 系统设计
 /system-design docs/specs/spec-model-routing.md
@@ -260,6 +270,7 @@ agent-plugins/
 │   ├── spec-clarifier/
 │   ├── spec-drafter/
 │   ├── system-design/
+│   ├── tech-research/
 │   └── techspec-template/
 ├── AGENTS.md
 ├── package.json

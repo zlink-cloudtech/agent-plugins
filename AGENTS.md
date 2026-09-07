@@ -65,6 +65,7 @@ PRD 工作流 + 系统设计技能包：提供从需求描述到可交付 PRD �
 - **spec-checker**: 从结构规范、内容完整性、内容准确性三个维度对 PRD 进行质量评审打分
 - **spec-analysis**: 对已澄清的 PRD 进行技术可行性分析，输出可行性报告：需求合理性检查、依赖分析、架构影响评估、复杂度评估、未确认假设清单、隐含 NFR 推导。内置 Phase 4 质量门，自动调用 feasibility-report-checker 评审并修复
 - **feasibility-report-checker**: 对可行性分析报告进行独立质量评审，从覆盖完整性、行动可执行性、逻辑一致性三个维度打分，标记可自动修复项。可独立调用或由 spec-analysis Phase 4 自动触发
+- **tech-research**: 根据 PRD 进行技术预研：识别预研项 → 制定预研计划 → 并行分发研究 Agent → 输出预研报告 + PRD 修改建议。支持标准模式（PRD 入口）与直接模式（由 action-researcher 传入预研项列表委托调用）
 
 ### 系统设计
 
@@ -81,6 +82,6 @@ PRD 工作流 + 系统设计技能包：提供从需求描述到可交付 PRD �
 3. `spec-clarifier` — 澄清 PRD 中的歧义，完善细节
 4. `spec-checker` — 评审 PRD 质量，输出评分和改进建议
 5. `spec-analysis` — 技术可行性分析，判断是否具备进入系统设计阶段的条件
-6. `action-researcher` — 对可行性报告中的"技术预研""风险缓解"类行动项执行预研验证，输出预研报告并反馈 PRD 修改建议
+6. `tech-research` — 对 PRD 中的技术不确定性进行预研验证，输出预研报告并反馈 PRD 修改建议（action-researcher 承接可行性报告行动项后以直接模式委托执行）
 7. `system-design` — 将 PRD 转化为面向多服务架构的技术规格（委派 architect / interface-designer，衔接 dependency-analyzer 与 constitution-checker）
 8. `architecture-evolution-check` — 可选：检测架构冲突，生成演进需求文档

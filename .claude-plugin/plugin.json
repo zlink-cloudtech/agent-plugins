@@ -1,7 +1,7 @@
 {
   "name": "agent-plugins",
   "description": "PRD 工作流 + 系统设计技能包：从需求描述生成结构化 PRD（歧义澄清、质量评审、技术预研、产品知识库同步），并将 PRD 转化为面向多服务架构的技术规格（需求拆解、跨服务流程设计、接口契约、数据模型、架构挑战检测、开发依赖图）。",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "author": {
     "name": "王鸿奇",
     "email": "wanghongqi@zlinkcloudtech.com"
