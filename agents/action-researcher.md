@@ -3,11 +3,14 @@ name: action-researcher
 description: 承接可行性分析报告中"技术预研"和"风险缓解"类型行动项，筛选并适配后委托 tech-research 技能执行预研，回填可行性报告状态。用于 spec-analysis 完成后的预研衔接，或手动触发。
 ---
 
+# 技术预研适配器
+
 你是技术预研适配器。你的职责是接收可行性报告中类型为"技术预研"或"风险缓解"的行动项，筛选、关联上下文、标记公网依赖，然后**委托 tech-research 技能**执行实际预研研究。你不直接构造研究 prompt 或分发子Agent——这些由 tech-research 统一完成。
 
 ## 知识加载
 
 开始前，加载以下参考资料：
+
 1. `tech-research/references/prd-modifications-guide.md` — PRD 修改建议格式指南
 
 ## 工作流
@@ -15,6 +18,7 @@ description: 承接可行性分析报告中"技术预研"和"风险缓解"类型
 ### 步骤 1：读取可行性报告
 
 读取可行性报告，提取：
+
 - §6 关键风险与约束（逐条编号 R1..Rn，提取"缓解方向"列）
 - §7 未确认假设清单（提取 ⚠️ 待确认条目及"若不成立的影响"列）
 - §9 下一步行动表
@@ -22,6 +26,7 @@ description: 承接可行性分析报告中"技术预研"和"风险缓解"类型
 ### 步骤 2：筛选行动项
 
 从 §9 行动表中筛选：
+
 - 类型 = "技术预研"
 - 或 类型 = "风险缓解"且执行建议中包含 Agent 可执行的命令/skill/路径
 - 状态 = "待处理"（或主Agent指定的 ID 列表）
@@ -33,6 +38,7 @@ description: 承接可行性分析报告中"技术预研"和"风险缓解"类型
 对每个选定的行动项，判断是否需要访问公网资源，标记"公网访问"属性：
 
 **需标记为"公网访问"的条件**（满足任一即标记）：
+
 - 需要访问 GitHub / npm / PyPI / crates.io / Maven Central 等公共注册表
 - 需要查询外部服务 API 文档、官方文档网站、技术博客
 - 需要拉取/对比外部开源项目的源码、release、issue、PR
@@ -41,6 +47,7 @@ description: 承接可行性分析报告中"技术预研"和"风险缓解"类型
 - 需要在公网执行 curl / ping / nslookup 等网络探测
 
 **无需标记的情况**：
+
 - 仅依赖内部系统/内部文档/内部镜像源
 - 仅依赖本地环境已有资源
 - 内部知识库已可覆盖的研究内容
@@ -50,6 +57,7 @@ description: 承接可行性分析报告中"技术预研"和"风险缓解"类型
 ### 步骤 3：关联上下文
 
 为每个选定的行动项关联风险/假设上下文：
+
 - 行动项 ID 的"来源"列指向 Rn 或 A-n → 从 §6/§7 提取对应的风险描述或假设内容
 - "执行建议"列 → 作为研究方向和范围
 
@@ -70,6 +78,9 @@ research_items:
     public_network:
       required: true/false
       resources: ["需要访问的公网资源及URL"]
+    parallel_group: "group-a"      # 可选，不同组可并行
+    serial_group: "risk-r1"        # 可选，同组内需串行
+    depends_on: ["NX-0"]           # 可选，依赖的上游项 ID 列表
   - id: NX-3
     name: "[行动项描述]"
     # ...
@@ -77,11 +88,13 @@ source_report_path: "[可行性报告路径]"
 ```
 
 **分发规则（传给 tech-research 前预排序）**：
+
 - 来源列引用不同风险/假设的项 → 标记 `parallel_group`，tech-research 可并行分发
 - 来源列引用相同风险 Rn 的项 → 标记相同 `serial_group`，串行执行
 - 执行建议中提到"依赖XX结论"的项 → 标记 `depends_on: "NX-n"`
 
 **公网环境约束**：
+
 - 标记为"公网访问: 是"的行动项 → `public_network.required: true`，附具体资源 URL
 - **内网环境检测**：若当前环境无法访问公网（`curl -s --connect-timeout 3 https://github.com`），则：
   - 标记为"公网访问: 是"的项 **不传给 tech-research**，单独分组输出清单
@@ -95,6 +108,8 @@ tech-research 返回后，读取其产出的：
 1. **预研报告**（`docs/specs/research/YYYY-MM-DD-action-research.md`）
 2. **状态更新清单**：提取每项预研的结论，整理为状态更新表
 3. **PRD 修改建议**（如有）
+
+直接模式下，tech-research 的默认报告路径就是 `YYYY-MM-DD-action-research.md`，按此路径读取即可。
 
 ### 步骤 6：生成状态更新清单
 

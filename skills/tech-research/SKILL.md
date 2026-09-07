@@ -28,13 +28,13 @@ tech-research 支持两种入口：
 
 入口为 PRD 文件。执行完整流程 Phase 1→2→3→4→5，从 PRD 中自动识别预研项、制定计划、执行研究、输出报告。
 
-由用户直接调用 `tech-research` 技能触发。
+由用户直接「调用 tech-research 技能」触发。
 
 ### 直接模式
 
 入口为外部传入的预研项列表（已筛选、已关联上下文）。**跳过 Phase 1（识别）和 Phase 2（计划）**，直接从 Phase 3（构造 prompt + 分发子Agent）开始执行。
 
-由 `action-researcher` Agent 委托调用，传入预研项列表和来源报告路径。传入参数结构：
+由 `action-researcher` Agent 「调用 tech-research 技能」，传入预研项列表和来源报告路径。传入参数结构：
 
 ```yaml
 mode: direct
@@ -49,10 +49,14 @@ research_items:
     public_network:
       required: true/false
       resources: ["资源列表"]
+    parallel_group: "group-a"      # 可选，不同组可并行
+    serial_group: "risk-r1"        # 可选，同组内需串行
+    depends_on: ["NX-0"]           # 可选，依赖的上游项 ID 列表
 source_report_path: "可行性报告路径"
 ```
 
-接收到直接模式请求后，将 `research_items` 视为 Phase 1 的产出，直接进入 Phase 3。
+  接收到直接模式请求后，将 `research_items` 视为 Phase 1 的产出，直接进入 Phase 3。
+  若调用方已提供 `parallel_group`、`serial_group`、`depends_on`，优先使用这些编排元数据，不重新推断。
 
 > **注意**：直接模式下，Phase 3 的研究 prompt 中"PRD 上下文"替换为"可行性上下文"（使用 `context` 字段），其余流程与标准模式一致。
 
@@ -151,12 +155,13 @@ Phase B（依赖 Phase A 结论）：
 
 #### 3.1 判断并行还是串行
 
-- **可并行的预研项**：「并行分发」子任务
+- **标准模式**：按 Phase 2 的计划结果决定哪些项「并行分发」，哪些项「串行分发」
+- **直接模式**：优先遵循调用方传入的 `parallel_group`、`serial_group`、`depends_on`
 - **有依赖的预研项**：等上游 Agent 返回结果后再启动下游研究
 
 #### 3.1.1 公网环境检测
 
-在分发预研 Agent 前，执行公网连通性检测：
+在「分发子任务」前，执行公网连通性检测：
 
 ```bash
 curl -s --connect-timeout 3 https://github.com > /dev/null && echo "公网可达" || echo "内网环境"
@@ -166,7 +171,7 @@ curl -s --connect-timeout 3 https://github.com > /dev/null && echo "公网可达
 - **内网环境**：
   - 标记为"公网访问: 否"的预研项 → 正常分发执行
   - 标记为"公网访问: 是"的预研项 → **不分发 Agent**，在预研报告中列出"公网访问依赖清单"，提示用户到外网环境完成
-  - 向用户输出明确提示：
+  - 「向用户提问」是否继续执行不需公网的预研项：
 
 ```
 ⚠️ 检测到当前为内网环境，以下预研项需要公网访问，无法自动执行：
@@ -246,12 +251,12 @@ curl -s --connect-timeout 3 https://github.com > /dev/null && echo "公网可达
 
 #### 3.3 分发并行 Agent
 
-对可并行执行的预研项，在同一条消息中同时发起多个 Agent 调用：
+对可并行执行的预研项，使用「并行分发」同时发起多个子任务；对串行组使用「串行分发」按顺序执行：
 
 ```
-Agent 1 → 研究预研项：执行引擎选型（P0）
-Agent 2 → 研究预研项：YAML Schema 校验方案（P1）
-Agent 3 → 研究预研项：DAG 调度与进程管理（P1）
+子任务 1 → 研究预研项：执行引擎选型（P0）
+子任务 2 → 研究预研项：YAML Schema 校验方案（P1）
+子任务 3 → 研究预研项：DAG 调度与进程管理（P1）
 ```
 
 #### 3.4 预研继续判断
@@ -289,7 +294,8 @@ Agent 3 → 研究预研项：DAG 调度与进程管理（P1）
 
 #### 4.3 保存报告
 
-默认输出路径：`docs/specs/research/YYYY-MM-DD-research-report.md`
+- **标准模式**默认输出路径：`docs/specs/research/YYYY-MM-DD-research-report.md`
+- **直接模式**默认输出路径：`docs/specs/research/YYYY-MM-DD-action-research.md`
 
 若项目无 `docs/specs/research/` 目录则创建。
 
@@ -353,3 +359,5 @@ PRD 修改建议：docs/specs/research/YYYY-MM-DD-prd-modifications.md
 - **内网降级**：Phase 3 执行前检测网络环境。内网环境下，标记为"公网访问: 是"的预研项不自动执行，输出公网访问依赖清单让用户到外网环境完成；标记为"公网访问: 否"的项正常执行
 - **DeepWiki 指引集成**：Phase 3 子Agent prompt 模板中固定包含 DeepWiki 使用指引。子Agent 自行判断何时使用 DeepWiki 工具，主流程不做预判。DeepWiki 仅适用于 GitHub 开源项目的实现细节查询
 - **直接模式兼容**：接收到 `mode: direct` 请求时，跳过 Phase 1 和 Phase 2，将 `research_items` 直接转为 Phase 3 的研究任务。「PRD 上下文」替换为「可行性上下文」
+- **编排元数据兼容**：直接模式下如已传入 `parallel_group`、`serial_group`、`depends_on`，必须沿用，不重新改写
+- **产出路径兼容**：直接模式默认产出 `YYYY-MM-DD-action-research.md`，供 `action-researcher` 与双端制品一致消费
